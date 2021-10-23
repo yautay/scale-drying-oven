@@ -28,14 +28,12 @@ unsigned long timerDelay = 1500;
 Adafruit_BME280 bme;
 
 // Search for parameter in HTTP POST request
-const char* PARAM_INPUT_TEMP = "input_temp";
-const char* PARAM_INPUT_SWITCH = "input_switch";
+const char* PARAM_INPUT_TEMP = "temp_setting";
 //Variables to save values from HTML form
 String input_temp;
 String input_switch;
 // File paths to save input values permanently
-const char* tempPath = "/inputTemp.txt";
-const char* switchPath = "/inputSwitch.txt";
+const char* tempPath = "/temp_setting.txt";
 
 // Initialize LittleFS
 void initFS() {

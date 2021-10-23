@@ -1,6 +1,7 @@
 // Get current sensor readings when the page loads
 window.addEventListener('load', getReadings);
 window.addEventListener('load', getValues);
+window.addEventListener('load', getStates);
 
 // Function to get current readings on the web page when it loads for the first time
 function getReadings() {
@@ -12,7 +13,6 @@ function getReadings() {
       document.getElementById("temp").innerHTML = myObj.temperature;
       document.getElementById("hum").innerHTML = myObj.humidity;
       document.getElementById("pres").innerHTML = myObj.pressure;
-      document.getElementById("input_temp").innerHTML = myObj.input_temp;
     } 
   };
   xhr.open("GET", "/readings", true);
@@ -25,11 +25,47 @@ function getValues(){
     if (this.readyState == 4 && this.status == 200) {
       var myObj = JSON.parse(this.responseText);
       console.log(myObj);
-      document.getElementById("tempSetValue").innerHTML = myObj.tempSetValue;
-      document.getElementById("switchSetValue").innerHTML = myObj.switchSetValue;
+      document.getElementById("temp_setting_val").innerHTML = myObj.temp_setting_val;
     }
   };
   xhr.open("GET", "/values", true);
+  xhr.send();
+}
+// Function to get and update GPIO states on the web page
+function getStates(){
+  var xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var myObj = JSON.parse(this.responseText);
+      console.log(myObj);
+      var output = myObj.power_switch.output;
+      var state = myObj.power_switch.state;
+      console.log(output);
+      console.log(state);
+      if (state == "1") {
+        document.getElementById(output).checked = true;
+        document.getElementById("power_switch_state").innerHTML = "ON";
+      }
+      else {
+        document.getElementById(output).checked = false;
+        document.getElementById("power_switch_state").innerHTML = "OFF";
+      }
+    }
+};
+xhr.open("GET", "/states", true);
+xhr.send();
+}
+// Send Requests to Control POWER
+function toggleCheckbox () {
+  var xhr = new XMLHttpRequest();
+  if (element.checked){
+    xhr.open("GET", "/update?output=power_switch&state=1", true);
+    document.getElementById("power_switch_state").innerHTML = "ON";
+  }
+  else {
+    xhr.open("GET", "/update?output=power_switch&state=0", true);
+    document.getElementById("power_switch_state").innerHTML = "OFF";
+  }
   xhr.send();
 }
 // Create an Event Source to listen for events
@@ -51,3 +87,5 @@ if (!!window.EventSource) {
     document.getElementById("pres").innerHTML = obj.pressure;
   }, false);
 }
+
+
