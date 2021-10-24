@@ -258,15 +258,19 @@ void loop() {
     events.send(getSensorReadings().c_str(),"new_readings" ,millis());
     lastTime = millis();
     if (power){
-      if ((bme.readTemperature() - 1) <= power_setting.toFloat() + (histeresis / 2)){
+      Serial.println("power loop");
+      if ((bme.readTemperature() - 1) <= (temp_setting.toFloat() + (histeresis / 2))){
+        Serial.println("chamber temp to low");
         if (get_bed_temp(NTC) <= (bed_temp + 3)){
           digitalWrite(HEATER_PIN, HIGH);
           Serial.println("HEATING...");
         } else if (get_bed_temp(NTC) >= (bed_temp -3)){
           digitalWrite(HEATER_PIN, LOW);
+          Serial.println("BED TO HOT...");
         }
-      } else if ((bme.readTemperature() - 1) >= power_setting.toFloat() - (histeresis / 2)){
+      } else if ((bme.readTemperature() - 1) >= (temp_setting.toFloat() - (histeresis / 2))){
         digitalWrite(HEATER_PIN, LOW);
+        Serial.println("chamber temp to high");
       }
     } else {
       digitalWrite(HEATER_PIN, LOW);
