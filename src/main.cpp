@@ -30,8 +30,7 @@ Adafruit_BME280 bme;
 // Search for parameter in HTTP POST request
 const char* PARAM_INPUT_TEMP = "temp_setting";
 //Variables to save values from HTML form
-String input_temp;
-String input_switch;
+String temp_setting;
 // File paths to save input values permanently
 const char* tempPath = "/temp_setting.txt";
 
@@ -99,7 +98,7 @@ void initBME(){
 
 // Get Sensor Readings and return JSON object
 String getSensorReadings(){
-  readings["temperature"] = String(bme.readTemperature() - 2);
+  readings["temperature"] = String(bme.readTemperature() - 1);
   readings["humidity"] = String(bme.readHumidity());
   readings["pressure"] = String(bme.readPressure()/100.0F);
   String jsonString = JSON.stringify(readings);
@@ -108,8 +107,7 @@ String getSensorReadings(){
 
 // Get Dashboard Inputs and return JSON object
 String getCurrentInputValues(){
-  values["input_temp"] = input_temp;
-  values["input_switch"] = input_switch;
+  values["temp_setting"] = temp_setting;
   String jsonString = JSON.stringify(values);
   return jsonString;
 }
@@ -122,22 +120,8 @@ void setup() {
   initWiFi();
 
   // Load values saved in LittleFS
-  input_temp = readFile(LittleFS, tempPath);
-  input_switch = readFile(LittleFS, switchPath);
+  temp_setting = readFile(LittleFS, tempPath);
 
-  // Web Server Root URL
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(LittleFS, "/index.html", "text/html");
-  });
-
-  server.serveStatic("/", LittleFS, "/");
-
-  // Request for the latest sensor readings
-  server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request){
-    String json = getSensorReadings();
-    request->send(200, "application/json", json);
-    json = String();
-  });
   events.onConnect([](AsyncEventSourceClient *client){
     if(client->lastId()){
     Serial.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
@@ -147,29 +131,43 @@ void setup() {
     client->send("hello!", NULL, millis(), 10000);
   });
 
-  server.on("/values", HTTP_GET, [](AsyncWebServerRequest *request){
-    String json = getCurrentInputValues();
+   server.serveStatic("/", LittleFS, "/");
+
+  // Web Server Root URL
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(LittleFS, "/index.html", "text/html");
+  });
+
+  // Web Server Root POST method for recieveing input temp_parameter from html
+  server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
+    int params = request->params();
+    AsyncWebParameter* p = request->getParam(0);
+    if(p->isPost()){
+      // HTTP POST input value
+      if (p->name() == PARAM_INPUT_TEMP) {
+        temp_setting = p->value().c_str();
+        Serial.print("input_temp set to: ");
+        Serial.println(temp_setting);
+        // Write file to save value
+        writeFile(LittleFS, tempPath, temp_setting.c_str());
+      }
+      Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
+    }
+    request->send(LittleFS, "/index.html", "text/html");
+  });
+
+  // Request for the latest sensor readings
+  server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = getSensorReadings();
     request->send(200, "application/json", json);
     json = String();
   });
 
-  server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
-    int params = request->params();
-    for(int i=0;i<params;i++){
-      AsyncWebParameter* p = request->getParam(i);
-      if(p->isPost()){
-        // HTTP POST input1 value
-        if (p->name() == PARAM_INPUT_TEMP) {
-          input_temp = p->value().c_str();
-          Serial.print("input_temp set to: ");
-          Serial.println(input_temp);
-          // Write file to save value
-          writeFile(LittleFS, tempPath, input_temp.c_str());
-        }
-        Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
-      }
-    }
-    request->send(LittleFS, "/index.html", "text/html");
+  // Request for the latest input values
+  server.on("/values", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = getCurrentInputValues();
+    request->send(200, "application/json", json);
+    json = String();
   });
 
   server.addHandler(&events);
@@ -181,7 +179,6 @@ void setup() {
 void loop() {
   AsyncElegantOTA.loop();
   if ((millis() - lastTime) > timerDelay) {
-    // Send Events to the client with the Sensor Readings Every 30 seconds
     events.send("ping",NULL,millis());
     events.send(getSensorReadings().c_str(),"new_readings" ,millis());
     lastTime = millis();

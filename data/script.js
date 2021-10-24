@@ -1,14 +1,14 @@
 // Get current sensor readings when the page loads
 window.addEventListener('load', getReadings);
 window.addEventListener('load', getValues);
-window.addEventListener('load', getStates);
+// window.addEventListener('load', getStates);
 
 // Function to get current readings on the web page when it loads for the first time
 function getReadings() {
-  var xhr = new XMLHttpRequest();
+  let xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var myObj = JSON.parse(this.responseText);
+    if (this.readyState === 4 && this.status === 200) {
+      let myObj = JSON.parse(this.responseText);
       console.log(myObj);
       document.getElementById("temp").innerHTML = myObj.temperature;
       document.getElementById("hum").innerHTML = myObj.humidity;
@@ -18,19 +18,21 @@ function getReadings() {
   xhr.open("GET", "/readings", true);
   xhr.send();
 }
+
 // Function to get current values on the web page when it loads for the first time
 function getValues(){
-  var xhr = new XMLHttpRequest();
+  let xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var myObj = JSON.parse(this.responseText);
+    if (this.readyState === 4 && this.status === 200) {
+      let myObj = JSON.parse(this.responseText);
       console.log(myObj);
-      document.getElementById("temp_setting_val").innerHTML = myObj.temp_setting_val;
+      document.getElementById("temp_setting_val").innerHTML = myObj.temp_setting;
     }
   };
   xhr.open("GET", "/values", true);
   xhr.send();
 }
+
 // Function to get and update GPIO states on the web page
 function getStates(){
   var xhr = new XMLHttpRequest();
@@ -55,6 +57,7 @@ function getStates(){
 xhr.open("GET", "/states", true);
 xhr.send();
 }
+
 // Send Requests to Control POWER
 function toggleCheckbox () {
   var xhr = new XMLHttpRequest();
@@ -68,6 +71,7 @@ function toggleCheckbox () {
   }
   xhr.send();
 }
+
 // Create an Event Source to listen for events
 if (!!window.EventSource) {
   var source = new EventSource('/events');
