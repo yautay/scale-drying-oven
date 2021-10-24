@@ -24,7 +24,9 @@ JSONVar values;
 JSONVar state;
 
 unsigned long lastTime = 0;
-unsigned long timerDelay = 1500;
+unsigned long timerDelay = 500;
+unsigned int bed_temp = 60;
+unsigned int histeresis = 1;
 
 bool power;
 
@@ -128,8 +130,29 @@ String getPowerState(){
   return jsonString;
 }
 
+// Return bed temperature
+float get_bed_temp(int thermistor_resistance) {
+  int Vo;
+  float R1 = thermistor_resistance;
+  float logR2, R2, T;
+  float c1 = 1.009249522e-03, c2 = 2.378405444e-04, c3 = 2.019202697e-07;
+
+  Vo = analogRead(NTC_PIN);
+  R2 = R1 * (1023.0 / (float)Vo - 1.0);
+  logR2 = log(R2);
+  T = (1.0 / (c1 + c2*logR2 + c3*logR2*logR2*logR2));
+  T = T - 273.15;
+  Serial.print("Bed temp: ");
+  Serial.print(T);
+  Serial.print(" C \n");
+  return T;
+}
+
+
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(HEATER_PIN, OUTPUT);
+  pinMode(NTC_PIN, INPUT);
 
   Serial.begin(115000);
   initBME();
@@ -234,5 +257,18 @@ void loop() {
     events.send("ping",NULL,millis());
     events.send(getSensorReadings().c_str(),"new_readings" ,millis());
     lastTime = millis();
+    if (power){
+      if ((bme.readTemperature() - 1) <= power_setting.toFloat() + (histeresis / 2)){
+        if (get_bed_temp(NTC) <= (bed_temp + 3)){
+          digitalWrite(HEATER_PIN, HIGH);
+        } else if (get_bed_temp(NTC) >= (bed_temp -3)){
+          digitalWrite(HEATER_PIN, HIGH);
+        }
+      } else if ((bme.readTemperature() - 1) >= power_setting.toFloat() - (histeresis / 2)){
+        digitalWrite(HEATER_PIN, LOW);
+      }
+    } else {
+      digitalWrite(HEATER_PIN, LOW);
+    }
   }
 }
