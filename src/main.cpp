@@ -21,21 +21,21 @@ AsyncEventSource events("/events");
 
 JSONVar readings;
 JSONVar values;
+JSONVar state;
 
 unsigned long lastTime = 0;
 unsigned long timerDelay = 1500;
 
+bool power;
+
 Adafruit_BME280 bme;
 
-// Search for parameter in HTTP POST request
-const char* PARAM_INPUT_TEMP = "temp_setting";
 //Variables to save values from HTML form
 String temp_setting;
+String power_setting;
 // File paths to save input values permanently
 const char* tempPath = "/temp_setting.txt";
-
-//PowerState Parameters
-int powerGPIO = D4;
+const char* statePath = "/state_setting.txt";
 
 // Initialize LittleFS
 void initFS() {
@@ -117,15 +117,20 @@ String getCurrentInputValues(){
 
 // Return JSON with Current Power State
 String getPowerState(){
-  JSONVar state;
-  state["power"]["state"] = String(digitalRead(powerGPIO));
+  if (power_setting == "1"){
+    power = true;
+  } else {
+    power = false;
+  }
+  state["state"] = power_setting;
   String jsonString = JSON.stringify(state);
   Serial.print(jsonString);
   return jsonString;
 }
 
 void setup() {
-  
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_BUILTIN_AUX, OUTPUT);
   Serial.begin(115000);
   initBME();
   initFS();
@@ -133,6 +138,10 @@ void setup() {
 
   // Load values saved in LittleFS
   temp_setting = readFile(LittleFS, tempPath);
+  power_setting = readFile(LittleFS, statePath);
+  Serial.println(temp_setting);
+  Serial.println(power_setting);
+
 
   events.onConnect([](AsyncEventSourceClient *client){
     if(client->lastId()){
@@ -152,11 +161,10 @@ void setup() {
 
   // Web Server Root POST method for recieveing input temp_parameter from html
   server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
-    int params = request->params();
     AsyncWebParameter* p = request->getParam(0);
     if(p->isPost()){
       // HTTP POST input value
-      if (p->name() == PARAM_INPUT_TEMP) {
+      if (p->name() == "temp_setting") {
         temp_setting = p->value().c_str();
         Serial.print("input_temp set to: ");
         Serial.println(temp_setting);
@@ -195,14 +203,23 @@ void setup() {
     // GET input value on /power?state=<state>
     if (request->hasParam("state")) {
       state = request->getParam("state")->value();
-      // Control GPIO
-      digitalWrite(powerGPIO, state.toInt());
+      if (state == "1"){
+        power = true;
+        digitalWrite(LED_BUILTIN_AUX, LOW);
+        digitalWrite(LED_BUILTIN, LOW);
+      } else if (state == "0") {
+        power = false;
+        digitalWrite(LED_BUILTIN_AUX, HIGH);
+        digitalWrite(LED_BUILTIN, HIGH);
+      }
     }
     else {
       state = "No message sent";
     }
     Serial.print("Power set to: ");
     Serial.println(state);
+    // Write file to save state
+    writeFile(LittleFS, statePath, state.c_str());
     request->send(200, "text/plain", "OK");
   });
 
@@ -213,7 +230,7 @@ void setup() {
   Serial.println("HTTP server started");
 
   // Set Power state
-  pinMode(powerGPIO, OUTPUT);
+  // pinMode(powerGPIO, OUTPUT);
 }
 void loop() {
   AsyncElegantOTA.loop();

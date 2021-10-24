@@ -40,21 +40,19 @@ function getState(){
     if (this.readyState === 4 && this.status === 200) {
       let myObj = JSON.parse(this.responseText);
       console.log(myObj);
-      let output = myObj.power_switch.output;
-      let state = myObj.power_switch.state;
-      console.log(output);
-      console.log(state);
+      let state = myObj.state;
+      console.log("State" + state);
       if (state === "1") {
-        document.getElementById(output).checked = true;
+        document.getElementById("power_switch").checked = true;
         document.getElementById("power_switch_state").innerHTML = "ON";
       }
       else {
-        document.getElementById(output).checked = false;
+        document.getElementById("power_switch").checked = false;
         document.getElementById("power_switch_state").innerHTML = "OFF";
       }
     }
 };
-xhr.open("GET", "/power", true);
+xhr.open("GET", "/state", true);
 xhr.send();
 }
 
