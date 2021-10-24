@@ -115,7 +115,7 @@ String getCurrentInputValues(){
   return jsonString;
 }
 
-// Return JSON with Current Power State
+// Return Current Power State set power variable and return JSON object
 String getPowerState(){
   if (power_setting == "1"){
     power = true;
@@ -130,7 +130,7 @@ String getPowerState(){
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(LED_BUILTIN_AUX, OUTPUT);
+
   Serial.begin(115000);
   initBME();
   initFS();
@@ -139,9 +139,6 @@ void setup() {
   // Load values saved in LittleFS
   temp_setting = readFile(LittleFS, tempPath);
   power_setting = readFile(LittleFS, statePath);
-  Serial.println(temp_setting);
-  Serial.println(power_setting);
-
 
   events.onConnect([](AsyncEventSourceClient *client){
     if(client->lastId()){
@@ -205,11 +202,9 @@ void setup() {
       state = request->getParam("state")->value();
       if (state == "1"){
         power = true;
-        digitalWrite(LED_BUILTIN_AUX, LOW);
         digitalWrite(LED_BUILTIN, LOW);
       } else if (state == "0") {
         power = false;
-        digitalWrite(LED_BUILTIN_AUX, HIGH);
         digitalWrite(LED_BUILTIN, HIGH);
       }
     }
@@ -218,6 +213,7 @@ void setup() {
     }
     Serial.print("Power set to: ");
     Serial.println(state);
+    power_setting = state;
     // Write file to save state
     writeFile(LittleFS, statePath, state.c_str());
     request->send(200, "text/plain", "OK");
