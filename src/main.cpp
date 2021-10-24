@@ -34,6 +34,9 @@ String temp_setting;
 // File paths to save input values permanently
 const char* tempPath = "/temp_setting.txt";
 
+//PowerState Parameters
+int powerGPIO = D4;
+
 // Initialize LittleFS
 void initFS() {
   if (!LittleFS.begin()) {
@@ -112,6 +115,15 @@ String getCurrentInputValues(){
   return jsonString;
 }
 
+// Return JSON with Current Power State
+String getPowerState(){
+  JSONVar state;
+  state["power"]["state"] = String(digitalRead(powerGPIO));
+  String jsonString = JSON.stringify(state);
+  Serial.print(jsonString);
+  return jsonString;
+}
+
 void setup() {
   
   Serial.begin(115000);
@@ -170,11 +182,38 @@ void setup() {
     json = String();
   });
 
+  // Request for the latest power state
+  server.on("/state", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = getPowerState();
+    request->send(200, "application/json", json);
+    json = String();
+  });
+
+  //GET request to /power?state=<state>
+  server.on("/power", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String state;
+    // GET input value on /power?state=<state>
+    if (request->hasParam("state")) {
+      state = request->getParam("state")->value();
+      // Control GPIO
+      digitalWrite(powerGPIO, state.toInt());
+    }
+    else {
+      state = "No message sent";
+    }
+    Serial.print("Power set to: ");
+    Serial.println(state);
+    request->send(200, "text/plain", "OK");
+  });
+
   server.addHandler(&events);
 
   AsyncElegantOTA.begin(&server); // Start ElegantOTA
   server.begin();
   Serial.println("HTTP server started");
+
+  // Set Power state
+  pinMode(powerGPIO, OUTPUT);
 }
 void loop() {
   AsyncElegantOTA.loop();

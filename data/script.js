@@ -1,7 +1,7 @@
 // Get current sensor readings when the page loads
 window.addEventListener('load', getReadings);
 window.addEventListener('load', getValues);
-// window.addEventListener('load', getStates);
+window.addEventListener('load', getState);
 
 // Function to get current readings on the web page when it loads for the first time
 function getReadings() {
@@ -33,18 +33,18 @@ function getValues(){
   xhr.send();
 }
 
-// Function to get and update GPIO states on the web page
-function getStates(){
-  var xhr = new XMLHttpRequest();
+// Function to get and update Power state on the web page
+function getState(){
+  let xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var myObj = JSON.parse(this.responseText);
+    if (this.readyState === 4 && this.status === 200) {
+      let myObj = JSON.parse(this.responseText);
       console.log(myObj);
-      var output = myObj.power_switch.output;
-      var state = myObj.power_switch.state;
+      let output = myObj.power_switch.output;
+      let state = myObj.power_switch.state;
       console.log(output);
       console.log(state);
-      if (state == "1") {
+      if (state === "1") {
         document.getElementById(output).checked = true;
         document.getElementById("power_switch_state").innerHTML = "ON";
       }
@@ -54,19 +54,19 @@ function getStates(){
       }
     }
 };
-xhr.open("GET", "/states", true);
+xhr.open("GET", "/power", true);
 xhr.send();
 }
 
 // Send Requests to Control POWER
-function toggleCheckbox () {
-  var xhr = new XMLHttpRequest();
+function toggleCheckbox (element) {
+  let xhr = new XMLHttpRequest();
   if (element.checked){
-    xhr.open("GET", "/update?output=power_switch&state=1", true);
+    xhr.open("GET", "/power?state=1", true);
     document.getElementById("power_switch_state").innerHTML = "ON";
   }
   else {
-    xhr.open("GET", "/update?output=power_switch&state=0", true);
+    xhr.open("GET", "/power?state=0", true);
     document.getElementById("power_switch_state").innerHTML = "OFF";
   }
   xhr.send();
@@ -74,12 +74,12 @@ function toggleCheckbox () {
 
 // Create an Event Source to listen for events
 if (!!window.EventSource) {
-  var source = new EventSource('/events');
+  let source = new EventSource('/events');
   source.addEventListener('open', function(e) {
     console.log("Events Connected");
   }, false);
   source.addEventListener('error', function(e) {
-    if (e.target.readyState != EventSource.OPEN) {
+    if (e.target.readyState !== EventSource.OPEN) {
       console.log("Events Disconnected");
     }
   }, false);
