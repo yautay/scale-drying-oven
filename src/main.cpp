@@ -261,8 +261,9 @@ void loop() {
       if ((bme.readTemperature() - 1) <= power_setting.toFloat() + (histeresis / 2)){
         if (get_bed_temp(NTC) <= (bed_temp + 3)){
           digitalWrite(HEATER_PIN, HIGH);
+          Serial.println("HEATING...");
         } else if (get_bed_temp(NTC) >= (bed_temp -3)){
-          digitalWrite(HEATER_PIN, HIGH);
+          digitalWrite(HEATER_PIN, LOW);
         }
       } else if ((bme.readTemperature() - 1) >= power_setting.toFloat() - (histeresis / 2)){
         digitalWrite(HEATER_PIN, LOW);
