@@ -192,7 +192,7 @@ void setup() {
   pinMode(HEATER_PIN, OUTPUT);
 
   Serial.begin(115000);
-  initBME();
+  // initBME();
   initFS();
   initWiFi();
 
@@ -340,10 +340,13 @@ void setup() {
     });
     server.begin();
   }
+  
 }
 void loop() {
+  Serial.println("HUJ WI");
+  Serial.println(restart);
   if(restart){
-    delay(5000);
+    delay(600000);
     ESP.restart();
   }
   AsyncElegantOTA.loop();
