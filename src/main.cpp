@@ -299,10 +299,12 @@ void setup() {
     Serial.print("AP IP address: ");
     Serial.println(IP);
     // Web Server Root URL
+    Serial.print("Set GET /");
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
       request->send(LittleFS, "/wifimanager.html", "text/html");
     });
     server.serveStatic("/", LittleFS, "/");
+    Serial.print("Set POST /");
     server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
       int params = request->params();
       for(int i=0;i<params;i++){
@@ -350,7 +352,7 @@ void loop() {
     ESP.restart();
   }
   AsyncElegantOTA.loop();
-  if ((millis() - lastTime) > timerDelay) {
+  /*if ((millis() - lastTime) > timerDelay) {
     events.send("ping",NULL,millis());
     events.send(getSensorReadings().c_str(),"new_readings" ,millis());
     lastTime = millis();
@@ -373,4 +375,5 @@ void loop() {
       digitalWrite(HEATER_PIN, LOW);
     }
   }
+  */
 }
