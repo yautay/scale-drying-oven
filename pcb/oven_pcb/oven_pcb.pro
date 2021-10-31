@@ -1,4 +1,4 @@
-update=30/10/2021 20:17:43
+update=31/10/2021 12:52:20
 version=1
 last_client=kicad
 [general]
@@ -25,7 +25,7 @@ ERC_TestSimilarLabels=1
 [pcbnew]
 version=1
 PageLayoutDescrFile=
-LastNetListRead=
+LastNetListRead=oven_pcb.net
 CopperLayerCount=2
 BoardThickness=1.6
 AllowMicroVias=0
@@ -40,6 +40,7 @@ MinMicroViaDrill=0.09999999999999999
 MinHoleToHole=0.25
 TrackWidth1=0.25
 TrackWidth2=0.5
+TrackWidth3=0.75
 ViaDiameter1=0.8
 ViaDrill1=0.4
 dPairWidth1=0.2
