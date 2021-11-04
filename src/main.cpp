@@ -37,21 +37,15 @@ bool power;
 //Variables to save values from HTML form
 String temp_setting;
 String power_setting;
-String ssid;
-String pass;
-String ip;
 
 // File paths to save input values permanently
 const char* tempPath = "/temp_setting.txt";
 const char* statePath = "/state_setting.txt";
-const char* ssidPath = "/ssid.txt";
-const char* passPath = "/pass.txt";
-const char* ipPath = "/ip.txt";
 
 Adafruit_BME280 bme;
 
 // Initialize LittleFS
-void initFS() {
+void initFS(){
   if (!LittleFS.begin()) {
     Serial.println("An error has occurred while mounting LittleFS");
   }
@@ -92,34 +86,10 @@ void writeFile(fs::FS &fs, const char * path, const char * message){
 }
 
 // Initialize WiFi
-bool initWiFi() {
-  int connect_attempt = 0;
-  if(ssid=="" || ip==""){
-    Serial.println("Undefined SSID or IP address.");
-    return false;
-  }
-  WiFi.mode(WIFI_STA);
-  localIP.fromString(ip.c_str());
-  if (!WiFi.config(localIP, gateway, subnet)){
-    Serial.println("STA Failed to configure");
-    return false;
-  }
-  WiFi.begin(ssid.c_str(), pass.c_str());
-  Serial.println("Connecting to WiFi...");
-  do {
-    if (WiFi.status() != WL_CONNECTED) {
-      Serial.print('.');
-      delay(1000);
-      connect_attempt++;
-    } else break;
-  } while (connect_attempt < 20);
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println(WiFi.localIP());
-    return true;
-  } else {
-    Serial.println("Failed to connect.");
-    return false;
-  }
+void initWiFi(){
+  
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, password);
 }
 
 // Init BME280
@@ -199,160 +169,96 @@ void setup() {
   // Load values saved in LittleFS
   temp_setting = readFile(LittleFS, tempPath);
   power_setting = readFile(LittleFS, statePath);
-  ssid = readFile(LittleFS, ssidPath);
-  pass = readFile(LittleFS, passPath);
-  ip = readFile(LittleFS, ipPath);
-
-
-  if(initWiFi()) {
-    events.onConnect([](AsyncEventSourceClient *client){
-      if(client->lastId()){
-      Serial.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
-      }
-      // send event with message "hello!", id current millis
-      // and set reconnect delay to 1 second
-      client->send("hello!", NULL, millis(), 10000);
-    });
-
-    server.serveStatic("/", LittleFS, "/");
-
-    // Web Server Root URL
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(LittleFS, "/index.html", "text/html");
-    });
-
-    // Web Server Root POST method for recieveing input temp_parameter from html
-    server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
-      AsyncWebParameter* p = request->getParam(0);
-      if(p->isPost()){
-        // HTTP POST input value
-        if (p->name() == "temp_setting") {
-          temp_setting = p->value().c_str();
-          Serial.print("input_temp set to: ");
-          Serial.println(temp_setting);
-          // Write file to save value
-          writeFile(LittleFS, tempPath, temp_setting.c_str());
-        }
-        Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
-      }
-      request->send(LittleFS, "/index.html", "text/html");
-    });
-
-    // Request for the latest sensor readings
-    server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request){
-      String json = getSensorReadings();
-      request->send(200, "application/json", json);
-      json = String();
-    });
-
-    // Request for the latest input values
-    server.on("/values", HTTP_GET, [](AsyncWebServerRequest *request){
-      String json = getCurrentInputValues();
-      request->send(200, "application/json", json);
-      json = String();
-    });
-
-    // Request for the latest power state
-    server.on("/state", HTTP_GET, [](AsyncWebServerRequest *request){
-      String json = getPowerState();
-      request->send(200, "application/json", json);
-      json = String();
-    });
-
-    //GET request to /power?state=<state>
-    server.on("/power", HTTP_GET, [] (AsyncWebServerRequest *request) {
-      String state;
-      // GET input value on /power?state=<state>
-      if (request->hasParam("state")) {
-        state = request->getParam("state")->value();
-        if (state == "1"){
-          power = true;
-          digitalWrite(LED_BUILTIN, LOW);
-        } else if (state == "0") {
-          power = false;
-          digitalWrite(LED_BUILTIN, HIGH);
-        }
-      }
-      else {
-        state = "No message sent";
-      }
-      Serial.print("Power set to: ");
-      Serial.println(state);
-      power_setting = state;
-      // Write file to save state
-      writeFile(LittleFS, statePath, state.c_str());
-      request->send(200, "text/plain", "OK");
-    });
-
-    server.addHandler(&events);
-
-    AsyncElegantOTA.begin(&server); // Start ElegantOTA
-    server.begin();
-    Serial.println("HTTP server started");
-  } 
-  else {
-    // Connect to Wi-Fi network with SSID and password
-    Serial.println("Setting AP (Access Point)");
-    // Remove the password parameter, if you want the AP (Access Point) to be open
-    WiFi.softAP("ESP-WIFI-MANAGER", NULL);
-    IPAddress IP = WiFi.softAPIP();
-    Serial.print("AP IP address: ");
-    Serial.println(IP);
-    // Web Server Root URL
-    Serial.print("Set GET /");
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(LittleFS, "/wifimanager.html", "text/html");
-    });
-    server.serveStatic("/", LittleFS, "/");
-    Serial.print("Set POST /");
-    server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
-      int params = request->params();
-      for(int i=0;i<params;i++){
-        AsyncWebParameter* p = request->getParam(i);
-        if(p->isPost()){
-          // HTTP POST ssid value
-          if (p->name() == PARAM_INPUT_1) {
-            ssid = p->value().c_str();
-            Serial.print("SSID set to: ");
-            Serial.println(ssid);
-            // Write file to save value
-            writeFile(LittleFS, ssidPath, ssid.c_str());
-          }
-          // HTTP POST pass value
-          if (p->name() == PARAM_INPUT_2) {
-            pass = p->value().c_str();
-            Serial.print("Password set to: ");
-            Serial.println(pass);
-            // Write file to save value
-            writeFile(LittleFS, passPath, pass.c_str());
-          }
-          // HTTP POST ip value
-          if (p->name() == PARAM_INPUT_3) {
-            ip = p->value().c_str();
-            Serial.print("IP Address set to: ");
-            Serial.println(ip);
-            // Write file to save value
-            writeFile(LittleFS, ipPath, ip.c_str());
-          }
-          //Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
-        }
-      }
-      restart = true;
-      request->send(200, "text/plain", "Done. ESP will restart, connect to your router and go to IP address: " + ip);
-    });
-    server.begin();
-  }
   
+  
+  events.onConnect([](AsyncEventSourceClient *client){
+    if(client->lastId()){
+    Serial.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
+    }
+    // send event with message "hello!", id current millis
+    // and set reconnect delay to 1 second
+    client->send("hello!", NULL, millis(), 10000);
+  });
+
+  server.serveStatic("/", LittleFS, "/");
+
+  // Web Server Root URL
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(LittleFS, "/index.html", "text/html");
+  });
+
+  // Web Server Root POST method for recieveing input temp_parameter from html
+  server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
+    AsyncWebParameter* p = request->getParam(0);
+    if(p->isPost()){
+      // HTTP POST input value
+      if (p->name() == "temp_setting") {
+        temp_setting = p->value().c_str();
+        Serial.print("input_temp set to: ");
+        Serial.println(temp_setting);
+        // Write file to save value
+        writeFile(LittleFS, tempPath, temp_setting.c_str());
+      }
+      Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
+    }
+    request->send(LittleFS, "/index.html", "text/html");
+  });
+
+  // Request for the latest sensor readings
+  server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = getSensorReadings();
+    request->send(200, "application/json", json);
+    json = String();
+  });
+
+  // Request for the latest input values
+  server.on("/values", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = getCurrentInputValues();
+    request->send(200, "application/json", json);
+    json = String();
+  });
+
+  // Request for the latest power state
+  server.on("/state", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = getPowerState();
+    request->send(200, "application/json", json);
+    json = String();
+  });
+
+  //GET request to /power?state=<state>
+  server.on("/power", HTTP_GET, [] (AsyncWebServerRequest *request){
+    String state;
+    // GET input value on /power?state=<state>
+    if (request->hasParam("state")) {
+      state = request->getParam("state")->value();
+      if (state == "1"){
+        power = true;
+        digitalWrite(LED_BUILTIN, LOW);
+      } else if (state == "0") {
+        power = false;
+        digitalWrite(LED_BUILTIN, HIGH);
+      }
+    }
+    else {
+      state = "No message sent";
+    }
+    Serial.print("Power set to: ");
+    Serial.println(state);
+    power_setting = state;
+    // Write file to save state
+    writeFile(LittleFS, statePath, state.c_str());
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.addHandler(&events);
+
+  AsyncElegantOTA.begin(&server); // Start ElegantOTA
+  server.begin();
+  Serial.println("HTTP server started");
 }
-void loop() {
-  Serial.println("HUJ WI");
-  Serial.println(restart);
-  if(restart){
-    delay(600000);
-    ESP.restart();
-  }
+void loop(){
   AsyncElegantOTA.loop();
-  /*if ((millis() - lastTime) > timerDelay) {
+  if ((millis() - lastTime) > timerDelay) {
     events.send("ping",NULL,millis());
     events.send(getSensorReadings().c_str(),"new_readings" ,millis());
     lastTime = millis();
@@ -375,5 +281,4 @@ void loop() {
       digitalWrite(HEATER_PIN, LOW);
     }
   }
-  */
 }
