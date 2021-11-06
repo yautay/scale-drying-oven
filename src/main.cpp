@@ -9,16 +9,6 @@
 #include <Adafruit_BME280.h>
 #include "config.h"
 
-// Search for parameter in HTTP POST request
-const char* PARAM_INPUT_1 = "ssid";
-const char* PARAM_INPUT_2 = "pass";
-const char* PARAM_INPUT_3 = "ip";
-
-// IPAddress localIP;
-IPAddress localIP(192, 168, 2, 200); // hardcoded
-// Gateway IP address
-IPAddress gateway(192, 168, 2, 90);
-IPAddress subnet(255, 255, 0, 0);
 
 AsyncWebServer server(80);
 AsyncEventSource events("/events");
@@ -29,9 +19,8 @@ JSONVar state;
 
 unsigned long lastTime = 0;
 unsigned long timerDelay = 2000;
-unsigned int bed_temp = 60;
+float bed_temp = 120;
 unsigned int histeresis = 1;
-boolean restart = false;
 bool power;
 
 //Variables to save values from HTML form
@@ -131,30 +120,11 @@ String getPowerState(){
 
 // Return bed temperature
 float get_bed_temp(int thermistor_resistance) {
-  const double VCC = 3.3;             // NodeMCU on board 3.3v vcc
-  const double R2 = NTC;            // 105k ohm series resistor
-  const double adc_resolution = 1023; // 10-bit adc
-
-  const double A = 0.001129148;   // thermistor equation parameters
-  const double B = 0.000234125;
-  const double C = 0.0000000876741; 
-
-  double Vout, Rth, temperature, adc_value; 
-
+  double adc_value; 
   adc_value = analogRead(A0);
-  Vout = (adc_value * VCC) / adc_resolution;
-  Rth = (VCC * R2 / Vout) - R2;
-
-/*  Steinhart-Hart Thermistor Equation:
- *  Temperature in Kelvin = 1 / (A + B[ln(R)] + C[ln(R)]^3)
- *  where A = 0.001129148, B = 0.000234125 and C = 8.76741*10^-8  */
-  temperature = (1 / (A + (B * log(Rth)) + (C * pow((log(Rth)),3))));   // Temperature in kelvin
-  temperature = temperature - 273.15;  // Temperature in degree celsius
-  
-  Serial.print("Bed temp: ");
-  Serial.print(temperature);
-  Serial.print(" C \n");
-  return temperature;
+  Serial.print("Bed adc: ");
+  Serial.print(adc_value);
+  return adc_value;
 }
 
 void setup() {
@@ -162,7 +132,7 @@ void setup() {
   pinMode(HEATER_PIN, OUTPUT);
 
   Serial.begin(115000);
-  // initBME();
+  initBME();
   initFS();
   initWiFi();
 
@@ -266,10 +236,10 @@ void loop(){
       Serial.println("power loop");
       if ((bme.readTemperature() - 1) <= (temp_setting.toFloat() + (histeresis / 2))){
         Serial.println("chamber temp to low");
-        if (get_bed_temp(NTC) <= (bed_temp + 3)){
+        if (get_bed_temp(NTC) <= (bed_temp + 5)){
           digitalWrite(HEATER_PIN, HIGH);
           Serial.println("HEATING...");
-        } else if (get_bed_temp(NTC) >= (bed_temp -3)){
+        } else if (get_bed_temp(NTC) >= (bed_temp -5)){
           digitalWrite(HEATER_PIN, LOW);
           Serial.println("BED TO HOT...");
         }
