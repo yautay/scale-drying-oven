@@ -6,3 +6,7 @@
 
 const char* ssid = "minis-heater";
 const char* password = "12345678";
+
+unsigned long timerDelay = 2000;
+
+unsigned int histeresis_bed = 2;
