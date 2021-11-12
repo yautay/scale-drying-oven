@@ -14,20 +14,32 @@ h1 {
 body {
   margin: 0;
 }
+h2 {
+  margin: 0;
+  padding: 15px 0 0 0;
+}
 .content {
-  padding: 50px;
+  padding: 20px;
+}
+.readings {
+  background-color: #1282A2;
+}
+.inputs {
+  background-color: #e1e437;
 }
 .card-grid {
   max-width: 800px;
-  margin: 0 auto;
+  margin: 20px auto 20px;
   display: grid;
   grid-gap: 2rem;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 .card {
-  background-color: white;
+  background-color: #f8fff3;
   box-shadow: 2px 2px 12px 1px rgba(140,140,140,.5);
+  border-radius: 15px;
 }
+
 .card-title {
   font-size: 1.2rem;
   font-weight: bold;
