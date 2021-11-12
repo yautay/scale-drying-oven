@@ -19,15 +19,19 @@
   <div class="card-grid">
     <div class="card">
       <p class="card-title"><i class="fas fa-thermometer-three-quarters" style="color:#059e8a;"></i> Temperature</p>
-      <p class="reading"><span id="temp"></span> &deg;C</p>
-    </div>
-    <div class="card">
-      <p class="card-title"><i class="fas fa-tint" style="color:#00add6;"></i> Humidity</p>
-      <p class="reading"><span id="hum"></span> &percnt;</p>
+      <p class="reading"><span id="display_temperature_chamber"></span> &deg;C</p>
     </div>
     <div class="card">
       <p class="card-title"><i class="fas fa-angle-double-down" style="color:#e1e437;"></i> Pressure</p>
-      <p class="reading"><span id="pres"></span> hpa</p>
+      <p class="reading"><span id="display_bed_params"></span> hpa</p>
+    </div>
+    <div class="card">
+      <p class="card-title"><i class="fas fa-tint" style="color:#00add6;"></i> Humidity</p>
+      <p class="reading"><span id="display_humidity"></span> &percnt;</p>
+    </div>
+    <div class="card">
+      <p class="card-title"><i class="fas fa-angle-double-down" style="color:#e1e437;"></i> Pressure</p>
+      <p class="reading"><span id="display_pressure"></span> hpa</p>
     </div>
   </div>
   </div>
@@ -47,7 +51,11 @@
     </div>
     <div class="card">
       <p class="card-title">Temp setting</p>
-      <p class="value">Current value: <span id="temp_setting_val"></span> &deg;C</p>
+      <p class="value">Current value: <span id="setting_temperature_chamber"></span> &deg;C</p>
+    </div>
+    <div class="card">
+      <p class="card-title">Temp setting</p>
+      <p class="value">Current value: <span id="setting_bed_adc"></span> &deg;C</p>
     </div>
     <div class="card">
       <p class="card-title"><i class="fas fa-lightbulb"></i> POWER</p>

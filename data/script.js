@@ -1,7 +1,6 @@
 // Get current sensor readings when the page loads
 window.addEventListener('load', getReadings);
 window.addEventListener('load', getValues);
-window.addEventListener('load', getState);
 
 // Function to get current readings on the web page when it loads for the first time
 function getReadings() {
@@ -10,9 +9,10 @@ function getReadings() {
     if (this.readyState === 4 && this.status === 200) {
       let myObj = JSON.parse(this.responseText);
       console.log(myObj);
-      document.getElementById("temp").innerHTML = myObj.temperature;
-      document.getElementById("hum").innerHTML = myObj.humidity;
-      document.getElementById("pres").innerHTML = myObj.pressure;
+      document.getElementById("display_temperature_chamber").innerHTML = myObj.temperature;
+      document.getElementById("display_humidity").innerHTML = myObj.humidity;
+      document.getElementById("display_pressure").innerHTML = myObj.pressure;
+      document.getElementById("display_bed_params").innerHTML = myObj.bed_adc;
     } 
   };
   xhr.open("GET", "/readings", true);
@@ -26,22 +26,9 @@ function getValues(){
     if (this.readyState === 4 && this.status === 200) {
       let myObj = JSON.parse(this.responseText);
       console.log(myObj);
-      document.getElementById("temp_setting_val").innerHTML = myObj.temp_setting;
-    }
-  };
-  xhr.open("GET", "/values", true);
-  xhr.send();
-}
-
-// Function to get and update Power state on the web page
-function getState(){
-  let xhr = new XMLHttpRequest();
-  xhr.onreadystatechange = function() {
-    if (this.readyState === 4 && this.status === 200) {
-      let myObj = JSON.parse(this.responseText);
-      console.log(myObj);
-      let state = myObj.state;
-      console.log("State" + state);
+      document.getElementById("setting_temperature_chamber").innerHTML = myObj.chamber;
+      document.getElementById("setting_bed_adc").innerHTML = myObj.bed;
+      let state = myObj.power;
       if (state === "1") {
         document.getElementById("power_switch").checked = true;
         document.getElementById("power_switch_state").innerHTML = "ON";
@@ -51,20 +38,20 @@ function getState(){
         document.getElementById("power_switch_state").innerHTML = "OFF";
       }
     }
-};
-xhr.open("GET", "/state", true);
-xhr.send();
+  };
+  xhr.open("GET", "/settings", true);
+  xhr.send();
 }
 
 // Send Requests to Control POWER
 function toggleCheckbox (element) {
   let xhr = new XMLHttpRequest();
   if (element.checked){
-    xhr.open("GET", "/power?state=1", true);
+    xhr.open("POST", "/settings?power=1", true);
     document.getElementById("power_switch_state").innerHTML = "ON";
   }
   else {
-    xhr.open("GET", "/power?state=0", true);
+    xhr.open("POST", "/settings?power=0", true);
     document.getElementById("power_switch_state").innerHTML = "OFF";
   }
   xhr.send();
@@ -84,9 +71,10 @@ if (!!window.EventSource) {
   source.addEventListener('new_readings', function(e) {
     console.log("new_readings", e.data);
     var obj = JSON.parse(e.data);
-    document.getElementById("temp").innerHTML = obj.temperature;
-    document.getElementById("hum").innerHTML = obj.humidity;
-    document.getElementById("pres").innerHTML = obj.pressure;
+    document.getElementById("display_temperature_chamber").innerHTML = obj.tempetature;
+    document.getElementById("display_humidity").innerHTML = obj.humidity;
+    document.getElementById("display_pressure").innerHTML = obj.pressure;
+    document.getElementById("display_bed_params").innerHTML = obj.bed_adc;
   }, false);
 }
 

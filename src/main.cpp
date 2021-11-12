@@ -25,7 +25,8 @@ String power_setting;
 
 // File paths to save input values permanently
 const char* temp_path = "/temp_setting.txt";
-const char* settings_path = "/state_setting.txt";
+const char* bed_path = "/bed_setting.txt";
+const char* power_path = "/power_setting.txt";
 
 Adafruit_BME280 bme;
 
@@ -102,9 +103,9 @@ String getSensorReadings(){
 
 // Get Dashboard Inputs and return JSON object
 String getCurrentSettingsValues(){
-    settings["temp_setting"] = temp_setting;
-    settings["bed_setting"] = bed_setting;
-    settings["power_setting"] = power_setting;
+    settings["chamber"] = temp_setting;
+    settings["bed"] = bed_setting;
+    settings["power"] = power_setting;
     String jsonString = JSON.stringify(settings);
     Serial.println(jsonString);
     return jsonString;
@@ -121,7 +122,8 @@ void setup() {
 
     // Load values saved in LittleFS
     temp_setting = readFile(LittleFS, temp_path);
-    power_setting = readFile(LittleFS, settings_path);
+    bed_setting = readFile(LittleFS, bed_path);
+    power_setting = readFile(LittleFS, power_path);
 
     events.onConnect([](AsyncEventSourceClient *client){
         if(client->lastId()){
@@ -140,27 +142,27 @@ void setup() {
     });
 
     // Web Server Root POST method for recieveing input temp_parameter from html
-    server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
+    server.on("/settings", HTTP_POST, [](AsyncWebServerRequest *request) {
         AsyncWebParameter *p = request->getParam(0);
         if (p->isPost()) {
             // HTTP POST input value
-            if (p->name() == "temp_setting") {
+            if (p->name() == "chamber") {
                 temp_setting = p->value().c_str();
                 Serial.println("input_temp set to: " + temp_setting);
                 // Write file to save value
-                writeFile(LittleFS, settings_path, temp_setting.c_str());
+                writeFile(LittleFS, temp_path, temp_setting.c_str());
                 Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());}
-            if (p->name() == "bed_setting") {
+            if (p->name() == "bed") {
                 bed_setting = p->value().c_str();
                 Serial.println("bed_temp set to: " + bed_setting);
                 // Write file to save value
-                writeFile(LittleFS, settings_path, bed_setting.c_str());
+                writeFile(LittleFS, bed_path, bed_setting.c_str());
                 Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());}
-            if (p->name() == "power_setting") {
+            if (p->name() == "power") {
                 power_setting = p->value().c_str();
                 Serial.println("power set to: " + power_setting);
                 // Write file to save value
-                writeFile(LittleFS, settings_path, bed_setting.c_str());
+                writeFile(LittleFS, power_path, bed_setting.c_str());
                 Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());}}});
 
     // Request for the latest sensor readings
